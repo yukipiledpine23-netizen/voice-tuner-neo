@@ -3,9 +3,9 @@
 import streamlit as st
 import os
 import re
-import base64
+import streamlit.components.v1 as components
 
-# --- 1. ブラウザ・ページ基本設定 ---
+# --- 1. ページ基本設定 ---
 st.set_page_config(page_title="VOICE TUNER NEO", layout="centered")
 
 # --- 2. UI カスタマイズ ---
@@ -14,7 +14,7 @@ st.markdown("""
     .stApp { background-color: #0e0e10 !important; color: #e1e1e3 !important; }
     header {visibility: hidden;}
     .main .block-container { padding-top: 1rem; }
-    iframe { border: none !important; width: 100% !important; height: 850px !important; }
+    iframe { border: none !important; width: 100% !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -50,49 +50,37 @@ if selected_file:
         notes_json = str(data).replace("'", '"')
         safe_raw_text = raw_text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${").replace("\n", "\\n")
 
-        # HTMLコンテンツ
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <style>
-                body {{ background-color: #0e0e10; margin: 0; padding: 0; overflow: hidden; }}
-                #app-wrapper {{ background-color:#0e0e10; color:#e1e1e3; font-family:sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-sizing: border-box; position:relative; overflow:hidden; }}
-            </style>
-        </head>
-        <body>
-        <div id="app-wrapper">
+        html_code = f"""
+        <div id="app-wrapper" style="background-color:#0e0e10; color:#e1e1e3; font-family:sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-sizing: border-box; position:relative;">
             <div id="mic-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#0e0e10; z-index:9999; display:flex; justify-content:center; align-items:center;">
-                <button id="st-btn" style="background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">
+                <button id="st-btn" style="background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer; -webkit-tap-highlight-color: transparent;">
                     START MIC / ACTIVATE
                 </button>
             </div>
             <div id="main-ui" style="opacity: 0;">
-                <div style="text-align:center; padding:10px 0 20px 0;">
+                <div style="text-align:center; padding:10px 0 20px 0; user-select:none;">
                     <h2 style="letter-spacing:10px; color:#00d4ff; margin:0; font-size:14px;">VOICE TUNER NEO</h2>
                 </div>
                 <div style="display: flex; gap: 15px; margin-bottom: 25px;">
                     <div style="flex: 1;">
-                        <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c;">
-                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; -webkit-tap-highlight-color: transparent;">➖</button>
+                        <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c; user-select:none;">
+                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px;">➖</button>
                             <div id="key-val" style="flex:1; text-align:center; font-weight:bold; font-size:13px; color:#ffb74d;">KEY: 0</div>
-                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; -webkit-tap-highlight-color: transparent;">➕</button>
+                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px;">➕</button>
                         </div>
-                        <div onclick="playNext()" style="background:#161618; border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; position:relative; user-select:none; -webkit-tap-highlight-color: transparent;">
+                        <div id="tap-area" style="background:#161618; border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; position:relative; user-select:none; cursor:pointer; -webkit-tap-highlight-color: transparent;">
                             <p style="font-size:11px; color:#555; position:absolute; top:15px; width:100%;">TAP TO NEXT ▶</p>
                             <h1 id="display-note" style="font-size:90px; color:#fff; margin:0; font-weight:100; line-height:0.8;">--</h1>
                         </div>
-                        <div style="display:flex; gap:10px;">
-                            <button onclick="resetApp()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px; -webkit-tap-highlight-color: transparent;">|< 最初へ</button>
-                            <button onclick="prevNote()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px; -webkit-tap-highlight-color: transparent;">◀ 戻る</button>
+                        <div style="display:flex; gap:10px; user-select:none;">
+                            <button onclick="resetApp()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px;">|< 最初へ</button>
+                            <button onclick="prevNote()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px;">◀ 戻る</button>
                         </div>
                     </div>
                     <div id="meter-container" style="width:35px; background:#1c1c1f; border-radius:14px; border:1px solid #3a3a3c; position:relative; overflow:hidden;">
                         <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(0,212,255,0.4);"></div>
                         <div id="target-note-mini" style="position:absolute; color:#444; font-size:9px; width:100%; text-align:center; top:50%; transform:translateY(12px);"></div>
-                        <div id="current-line" style="position:absolute; width:100%; height:3px; background:#00d4ff; top:50%; opacity:0;"></div>
+                        <div id="current-line" style="position:absolute; width:100%; height:3px; background:#00d4ff; top:50%; opacity:0; transition: top 0.05s ease-out;"></div>
                     </div>
                 </div>
                 <div style="background:#161618; border-radius:14px; padding:15px; border:1px solid #2d2d30;">
@@ -101,31 +89,39 @@ if selected_file:
                 </div>
             </div>
         </div>
+
         <script>
         const baseData = {notes_json}, rawText = `{safe_raw_text}`, valToNote = ["ド", "ド#", "レ", "レ#", "ミ", "ファ", "ファ#", "ソ", "ソ#", "ラ", "ラ#", "シ"];
         let currentKey = 0, currentIndex = -1, nextDisplayIndex = 0, audioCtx = null, masterGain = null, analyzer = null, isMicActive = false;
         let buf = new Float32Array(1024);
 
+        // イベントリスナーでマイクを起動
         document.getElementById('st-btn').addEventListener('click', async () => {{
             try {{
                 const nav = window.navigator;
-                if (!nav.mediaDevices || !nav.mediaDevices.getUserMedia) {{
-                    alert("マイク未対応ブラウザです。Safari/Chromeをお使いください。");
-                    return;
-                }}
+                const mediaDevices = nav.mediaDevices || ((nav.mozGetUserMedia || nav.webkitGetUserMedia) ? {{
+                    getUserMedia: (c) => new Promise((y, n) => (nav.mozGetUserMedia || nav.webkitGetUserMedia).call(nav, c, y, n))
+                }} : null);
+
+                if (!mediaDevices) throw new Error("ブラウザがマイクアクセスを制限しています。Safari/Chromeで直接開いてください。");
+
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const stream = await nav.mediaDevices.getUserMedia({{ audio: true }});
+                const stream = await mediaDevices.getUserMedia({{ audio: true }});
+                
                 masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.5, audioCtx.currentTime); 
                 masterGain.connect(audioCtx.destination);
                 const source = audioCtx.createMediaStreamSource(stream);
                 analyzer = audioCtx.createAnalyser(); analyzer.fftSize = 1024;
                 source.connect(analyzer);
+                
                 isMicActive = true; 
                 document.getElementById('mic-overlay').style.display = 'none';
                 document.getElementById('main-ui').style.opacity = '1';
                 tick(); updateDisplay();
-            }} catch(e) {{ alert("ERR: " + e.name + " - " + e.message); }}
+            }} catch(e) {{ alert("ERR: " + e.message); }}
         }});
+
+        document.getElementById('tap-area').addEventListener('click', () => {{ playNext(); }});
 
         function tick() {{
             if (!isMicActive) return;
@@ -196,17 +192,7 @@ if selected_file:
         function resetApp() {{ currentIndex = -1; nextDisplayIndex = 0; updateDisplay(); }}
         updateDisplay();
         </script>
-        </body>
-        </html>
         """
 
-        # HTMLをBase64にエンコード
-        b64_html = base64.b64encode(html_content.encode("utf-8")).decode("utf-8")
-        
-        # 確実にマイクを許可するiframe属性を付与して出力
-        st.write(
-            f'<iframe src="data:text/html;base64,{b64_html}" '
-            f'allow="microphone; camera; autoplay;" '
-            f'style="width:100%; height:850px; border:none;"></iframe>',
-            unsafe_allow_html=True
-        )
+        # 結局、公式コンポーネントで "microphone" を明示するのが、Streamlit Cloudのドメインでは最強です。
+        components.html(html_code, height=850, scrolling=False)
