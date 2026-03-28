@@ -10,7 +10,7 @@ import base64
 # --- 1. ブラウザ・ページ基本設定 ---
 st.set_page_config(page_title="VOICE TUNER NEO", layout="centered")
 
-# --- 2. UI カスタマイズ (CSS) ---
+# --- 2. UI カスタマイズ ---
 st.markdown("""
     <style>
     .stApp { background-color: #0e0e10 !important; color: #e1e1e3 !important; }
@@ -19,13 +19,10 @@ st.markdown("""
         background-color: #1c1c1f !important;
         box-shadow: none !important;
     }
-    div[data-baseweb="select"] > div {
-        border: none !important;
-        box-shadow: none !important;
-        outline: none !important;
-    }
+    div[data-baseweb="select"] > div { border: none !important; box-shadow: none !important; }
     header {visibility: hidden;}
     .main .block-container { padding-top: 2rem; }
+    iframe { border: none !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -35,17 +32,11 @@ def list_txt_files():
 
 def get_base_notes_with_structure(filename):
     if not filename: return [], ""
-    note_map = {
-        'ド': 0, 'レ': 2, 'ミ': 4, 'ファ': 5, 'ソ': 7, 'ラ': 9, 'シ': 11,
-        'ど': 0, 'れ': 2, 'み': 4, 'ふぁ': 5, 'そ': 7, 'ら': 9, 'し': 11,
-        'do': 0, 're': 2, 'mi': 4, 'fa': 5, 'so': 7, 'ra': 9, 'si': 11, 'ti': 11,
-        'c': 0, 'd': 2, 'e': 4, 'f': 5, 'g': 7, 'a': 9
-    }
+    note_map = {'ド': 0, 'レ': 2, 'ミ': 4, 'ファ': 5, 'ソ': 7, 'ラ': 9, 'シ': 11, 'ど': 0, 'れ': 2, 'み': 4, 'ふぁ': 5, 'そ': 7, 'ら': 9, 'し': 11, 'do': 0, 're': 2, 'mi': 4, 'fa': 5, 'so': 7, 'ra': 9, 'si': 11, 'ti': 11, 'c': 0, 'd': 2, 'e': 4, 'f': 5, 'g': 7, 'a': 9}
     try:
         with open(filename, "r", encoding="utf-8") as f:
             original_text = f.read()
-    except:
-        return [], ""
+    except: return [], ""
     clean_text = original_text.lower().replace("ー", "")
     pattern = r"([ァ-ヶぁ-ん]{1,2}|[a-z]{1,2})([#b♭＃＃]?)([0-9])([#b♭＃＃]?)"
     matches = re.finditer(pattern, clean_text)
@@ -68,10 +59,20 @@ if selected_file:
         safe_raw_text = raw_text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${").replace("\n", "\\n")
 
         html_code = f"""
-        <div id="app-wrapper" style="background-color:#0e0e10; color:#e1e1e3; font-family:'Segoe UI', Roboto, sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); box-sizing: border-box; position:relative; overflow:hidden;">
-
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+                body {{ background-color: #0e0e10; margin: 0; padding: 0; overflow-x: hidden; }}
+                #app-wrapper {{ background-color:#0e0e10; color:#e1e1e3; font-family:'Segoe UI', Roboto, sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); box-sizing: border-box; position:relative; overflow:hidden; }}
+            </style>
+        </head>
+        <body>
+        <div id="app-wrapper">
             <div id="mic-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#0e0e10; z-index:9999; display:flex; flex-direction:column; align-items:center;">
-                <button onclick="startApp()" style="position:absolute; top:280px; background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer; box-shadow: 0 0 20px rgba(0,212,255,0.2); outline:none; -webkit-tap-highlight-color: transparent;">
+                <button id="start-btn" onclick="startApp()" style="position:absolute; top:280px; background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">
                     START / ACTIVATE MIC
                 </button>
             </div>
@@ -87,22 +88,19 @@ if selected_file:
                 <div style="display: flex; gap: 15px; margin-bottom: 28px;">
                     <div style="flex: 1;">
                         <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c; user-select: none;">
-                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">➖</button>
+                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; cursor:pointer; -webkit-tap-highlight-color: transparent;">➖</button>
                             <div id="key-val" style="flex:1; text-align:center; font-weight:bold; font-size:13px; color:#ffb74d; letter-spacing:2px;">KEY: 0</div>
-                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">➕</button>
+                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; cursor:pointer; -webkit-tap-highlight-color: transparent;">➕</button>
                         </div>
-
                         <div onclick="playNext()" style="background:linear-gradient(145deg, #161618, #1c1c1f); border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; cursor:pointer; position:relative; overflow:hidden; user-select: none; -webkit-tap-highlight-color: transparent;">
                             <p style="font-size:13px; color:#555; letter-spacing:3px; position:absolute; top:18px; width:100%; text-align:center;">TAP TO NEXT ▶</p>
-                            <h1 id="display-note" style="font-size:95px; color:#fff; text-shadow: 0 0 25px rgba(0,212,255,0.4); margin:0; font-weight:100; line-height:0.8; display:block;">--</h1>
+                            <h1 id="display-note" style="font-size:95px; color:#fff; text-shadow: 0 0 25px rgba(0,212,255,0.4); margin:0; font-weight:100; line-height:0.8;">--</h1>
                         </div>
-
                         <div style="display:flex; gap:12px; user-select: none;">
-                            <button onclick="resetApp()" style="flex:1; height:52px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:13px; font-weight:600; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">|< 最初へ</button>
-                            <button onclick="prevNote()" style="flex:1; height:52px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:13px; font-weight:600; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">◀ 戻る</button>
+                            <button onclick="resetApp()" style="flex:1; height:52px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:13px; font-weight:600; cursor:pointer;">|< 最初へ</button>
+                            <button onclick="prevNote()" style="flex:1; height:52px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:13px; font-weight:600; cursor:pointer;">◀ 戻る</button>
                         </div>
                     </div>
-
                     <div id="meter-container" style="width:35px; background:#1c1c1f; border-radius:14px; border:1px solid #3a3a3c; position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center;">
                         <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(0,212,255,0.4); z-index:1;"></div>
                         <div id="target-note-mini" style="position:absolute; color:#444; font-size:10px; font-weight:bold; transform:translateY(12px); width:100%; text-align:center; top:50%;"></div>
@@ -112,16 +110,15 @@ if selected_file:
 
                 <div style="background:#161618; border-radius:14px; padding:18px; border:1px solid #2d2d30;">
                     <div style="margin-bottom:18px;">
-                        <span style="font-size:10px; color:#d1d1d6; letter-spacing:1px; font-weight:bold; opacity:0.8; user-select: none;">キー変更後</span>
+                        <span style="font-size:10px; color:#d1d1d6; letter-spacing:1px; font-weight:bold; opacity:0.8;">キー変更後</span>
                         <div id="after-list" style="color:#d1d1d6; font-size:14px; white-space:pre-wrap; line-height:1.8; max-height:150px; overflow-y:auto; padding:10px; margin-top:8px; border:1px solid #2d2d30; border-radius:6px; background:#0e0e10;"></div>
                     </div>
                     <div>
-                        <span style="font-size:10px; color:#444; letter-spacing:1px; font-weight:bold; opacity:0.8; user-select: none;">キー変更前</span>
+                        <span style="font-size:10px; color:#444; letter-spacing:1px; font-weight:bold; opacity:0.8;">キー変更前</span>
                         <div id="before-list" style="color:#444; font-size:14px; white-space:pre-wrap; line-height:1.8; max-height:150px; overflow-y:auto; padding:10px; margin-top:8px; border:1px solid #2d2d30; border-radius:6px; background:#0e0e10;"></div>
                     </div>
                 </div>
-
-                <div style="text-align:center; padding:20px 0 5px 0; font-size:9px; color:#3a3a3c; letter-spacing:3px; user-select: none;">DEVELOPED BY 鷺城流</div>
+                <div style="text-align:center; padding:20px 0 5px 0; font-size:9px; color:#3a3a3c; letter-spacing:3px;">DEVELOPED BY 鷺城流</div>
             </div>
         </div>
 
@@ -132,18 +129,23 @@ if selected_file:
 
         async function startApp() {{
             try {{
+                // マイク権限チェックを明示的に
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {{
+                    alert("ブラウザがマイクに対応していないか、権限がブロックされています。SafariやChromeの最新版で開き直してください。");
+                    return;
+                }}
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)({{ latencyHint: 0 }});
                 masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.5, audioCtx.currentTime); 
                 const comp = audioCtx.createDynamicsCompressor(); masterGain.connect(comp); comp.connect(audioCtx.destination); 
-                const stream = await navigator.mediaDevices.getUserMedia({{ audio: {{ echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 }} }});
+                const stream = await navigator.mediaDevices.getUserMedia({{ audio: {{ echoCancellation: false, noiseSuppression: false, autoGainControl: false }} }});
                 const source = audioCtx.createMediaStreamSource(stream);
-                analyzer = audioCtx.createAnalyser(); analyzer.fftSize = 1024; analyzer.smoothingTimeConstant = 0;
+                analyzer = audioCtx.createAnalyser(); analyzer.fftSize = 1024;
                 source.connect(analyzer);
                 isMicActive = true; 
                 document.getElementById('mic-overlay').style.display = 'none';
                 document.getElementById('main-ui').style.opacity = '1';
                 tick(); updateDisplay();
-            }} catch(e) {{ alert("マイクエラー詳細: " + e.name + " - " + e.message); }}
+            }} catch(e) {{ alert("マイクエラー: " + e.name + " - " + e.message); }}
         }}
 
         function tick() {{
@@ -221,12 +223,15 @@ if selected_file:
         function resetApp() {{ currentIndex = -1; nextDisplayIndex = 0; updateDisplay(); }}
         if (baseData.length > 0) updateDisplay();
         </script>
+        </body>
+        </html>
         """
-        # HTMLをBase64に変換して、allow="microphone"付きのiframeとして出力
+        
         b64_html = base64.b64encode(html_code.encode("utf-8")).decode("utf-8")
+        # --- ここで allow 属性を強力に設定 ---
         st.write(
             f'<iframe src="data:text/html;base64,{b64_html}" '
-            f'height="820" style="width:100%; border:none; overflow:hidden;" '
-            f'allow="microphone"></iframe>',
+            f'height="820" style="width:100%; border:none;" '
+            f'allow="camera; microphone; autoplay; encrypted-media;"></iframe>',
             unsafe_allow_html=True
         )
