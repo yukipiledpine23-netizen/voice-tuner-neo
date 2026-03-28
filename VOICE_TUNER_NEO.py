@@ -24,6 +24,8 @@ st.markdown("""
     }
     header {visibility: hidden;}
     .main .block-container { padding-top: 2rem; }
+    /* iframeの二重表示や余白を防止 */
+    iframe { border: none !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -59,6 +61,7 @@ def get_base_notes_with_structure(filename):
 txt_files = list_txt_files()
 selected_file = st.selectbox("SELECT TRACK", txt_files, label_visibility="collapsed") if txt_files else None
 
+# ファイルが選択された時だけ「1つだけ」iframeを出す
 if selected_file:
     data, raw_text = get_base_notes_with_structure(selected_file)
     if data:
@@ -67,13 +70,11 @@ if selected_file:
 
         html_code = f"""
         <div id="app-wrapper" style="background-color:#0e0e10; color:#e1e1e3; font-family:'Segoe UI', Roboto, sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); box-sizing: border-box; position:relative; overflow:hidden;">
-
             <div id="mic-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#0e0e10; z-index:9999; display:flex; flex-direction:column; align-items:center;">
                 <button id="activate-btn" style="position:absolute; top:280px; background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer; box-shadow: 0 0 20px rgba(0,212,255,0.2); outline:none; -webkit-tap-highlight-color: transparent;">
                     START / ACTIVATE MIC
                 </button>
             </div>
-
             <div id="main-ui" style="opacity: 0;">
                 <div style="text-align:center; padding:15px 0 20px 0; user-select: none;">
                     <h2 style="letter-spacing:12px; font-weight:200; color:#00d4ff; margin:0; font-size:14px; opacity:0.8; display:inline-block; position:relative; padding-bottom:12px;">
@@ -81,7 +82,6 @@ if selected_file:
                         <span style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:240px; height:1px; background:linear-gradient(90deg, transparent, #00d4ff, transparent); opacity:0.4;"></span>
                     </h2>
                 </div>
-
                 <div style="display: flex; gap: 15px; margin-bottom: 28px;">
                     <div style="flex: 1;">
                         <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c; user-select: none;">
@@ -89,25 +89,21 @@ if selected_file:
                             <div id="key-val" style="flex:1; text-align:center; font-weight:bold; font-size:13px; color:#ffb74d; letter-spacing:2px;">KEY: 0</div>
                             <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">➕</button>
                         </div>
-
                         <div onclick="playNext()" style="background:linear-gradient(145deg, #161618, #1c1c1f); border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; cursor:pointer; position:relative; overflow:hidden; user-select: none; -webkit-tap-highlight-color: transparent;">
                             <p style="font-size:13px; color:#555; letter-spacing:3px; position:absolute; top:18px; width:100%; text-align:center;">TAP TO NEXT ▶</p>
                             <h1 id="display-note" style="font-size:95px; color:#fff; text-shadow: 0 0 25px rgba(0,212,255,0.4); margin:0; font-weight:100; line-height:0.8; display:block;">--</h1>
                         </div>
-
                         <div style="display:flex; gap:12px; user-select: none;">
                             <button onclick="resetApp()" style="flex:1; height:52px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:13px; font-weight:600; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">|< 最初へ</button>
                             <button onclick="prevNote()" style="flex:1; height:52px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:13px; font-weight:600; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">◀ 戻る</button>
                         </div>
                     </div>
-
                     <div id="meter-container" style="width:35px; background:#1c1c1f; border-radius:14px; border:1px solid #3a3a3c; position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center;">
                         <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(0,212,255,0.4); z-index:1;"></div>
                         <div id="target-note-mini" style="position:absolute; color:#444; font-size:10px; font-weight:bold; transform:translateY(12px); width:100%; text-align:center; top:50%;"></div>
                         <div id="current-line" style="position:absolute; width:100%; height:3px; background:#00d4ff; box-shadow: 0 0 8px #00d4ff; top:50%; opacity:0; transition: top 0.05s ease-out; z-index:2;"></div>
                     </div>
                 </div>
-
                 <div style="background:#161618; border-radius:14px; padding:18px; border:1px solid #2d2d30;">
                     <div style="margin-bottom:18px;">
                         <span style="font-size:10px; color:#d1d1d6; letter-spacing:1px; font-weight:bold; opacity:0.8; user-select: none;">キー変更後</span>
@@ -118,42 +114,33 @@ if selected_file:
                         <div id="before-list" style="color:#444; font-size:14px; white-space:pre-wrap; line-height:1.8; max-height:150px; overflow-y:auto; padding:10px; margin-top:8px; border:1px solid #2d2d30; border-radius:6px; background:#0e0e10;"></div>
                     </div>
                 </div>
-
                 <div style="text-align:center; padding:20px 0 5px 0; font-size:9px; color:#3a3a3c; letter-spacing:3px; user-select: none;">DEVELOPED BY 鷺城流</div>
             </div>
         </div>
-
         <script>
         const baseData = {notes_json}, rawText = `{safe_raw_text}`, valToNote = ["ド", "ド#", "レ", "レ#", "ミ", "ファ", "ファ#", "ソ", "ソ#", "ラ", "ラ#", "シ"];
         let currentKey = 0, currentIndex = -1, nextDisplayIndex = 0, audioCtx = null, masterGain = null, analyzer = null, activeNodes = [], isMicActive = false;
         let buf = new Float32Array(1024);
 
-        // イベントリスナーを使用して確実に権限を要求
         document.getElementById('activate-btn').addEventListener('click', async () => {{
             try {{
                 const nav = window.navigator;
                 const mediaDevices = nav.mediaDevices || ((nav.mozGetUserMedia || nav.webkitGetUserMedia) ? {{
                     getUserMedia: (c) => new Promise((y, n) => (nav.mozGetUserMedia || nav.webkitGetUserMedia).call(nav, c, y, n))
                 }} : null);
-
-                if (!mediaDevices) throw new Error("ブラウザがマイクアクセスを制限しています");
-
+                if (!mediaDevices) throw new Error("ブラウザ制限");
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)({{ latencyHint: 0 }});
                 masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.5, audioCtx.currentTime); 
                 const comp = audioCtx.createDynamicsCompressor(); masterGain.connect(comp); comp.connect(audioCtx.destination); 
-                
                 const stream = await mediaDevices.getUserMedia({{ audio: {{ echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 }} }});
                 const source = audioCtx.createMediaStreamSource(stream);
                 analyzer = audioCtx.createAnalyser(); analyzer.fftSize = 1024; analyzer.smoothingTimeConstant = 0;
                 source.connect(analyzer);
-                
                 isMicActive = true; 
                 document.getElementById('mic-overlay').style.display = 'none';
                 document.getElementById('main-ui').style.opacity = '1';
                 tick(); updateDisplay();
-            }} catch(e) {{ 
-                alert("マイクを許可してください: " + e.message); 
-            }}
+            }} catch(e) {{ alert("マイクを許可してください"); }}
         }});
 
         function tick() {{
@@ -174,8 +161,7 @@ if selected_file:
                 const targetPos = baseData[currentIndex].abs_pos + currentKey;
                 const targetFreq = 440 * Math.pow(2, (targetPos - 57) / 12);
                 let cents = 1200 * Math.log2(pitch / targetFreq);
-                line.style.opacity = "1";
-                line.style.top = (50 - (Math.max(-200, Math.min(200, cents)) / 4)) + "%";
+                if (line) {{ line.style.opacity = "1"; line.style.top = (50 - (Math.max(-200, Math.min(200, cents)) / 4)) + "%"; }}
             }} else if (line) {{ line.style.opacity = "0"; }}
             requestAnimationFrame(tick);
         }}
@@ -232,8 +218,5 @@ if selected_file:
         if (baseData.length > 0) updateDisplay();
         </script>
         """
-        # components.html はそのままで、マイク許可が通るように構成
+        # ここでiframeを出力
         components.html(html_code, height=850, scrolling=True)
-
-        # 高さを少し余裕を持って確保し、スクロールを無効化
-        components.html(html_code, height=860, scrolling=False)
