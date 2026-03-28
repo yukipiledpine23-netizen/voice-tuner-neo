@@ -222,4 +222,4 @@ if selected_file:
         if (baseData.length > 0) updateDisplay();
         </script>
         """
-        components.html(html_code, height=850, scrolling=True, allow="microphone")
+        components.html(html_code, height=850, scrolling=True)
