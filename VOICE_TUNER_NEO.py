@@ -1,55 +1,5 @@
 # 20260326
-# 直下にinput.txt作って、ドレミ レbとか書き込んでおく
-# 変更したいキーを、configのKEY_SHIFTで書いておく。実行するとoutput.txtに追加される
-# ラシレミ b
 
-#ボタンを押すと順次演奏される。Streamlit
-#20260328 音声も追加 ピッチインジケーター
-
-
-# [PCのpycharmで実行]
-#実行方法は、左下のターミナルをおして、streamlit run "VOICE_TUNER_NEO.py"
-#ctrl+cで終わる.
-
-#[androidでテスト実行]
-# ターミナルに表示されるNetwork URL: http://192.168.10.103:8501これをスマホブラウザで打てば、ローカルネットワーク内なら確認できる。
-
-# [githubにあげてスマホで共有する]
-#yuki.piledpine2.3@gmail.com
-# のgoogleアカウントで入った
-# ユーザー名：yukipiledpine23-netizen　で登録した
-
-#メニューからリポジトリ→新しいリポジトリ→リポジトリ名
-# →表示範囲→公開→リポジトリを作成
-# 中央当たりにuploading an existing fileを押して、このファイルとtxtをアップロード
-# Commit changesをおす。
-
-#ファイルの追加や編集はhttps://github.com/yukipiledpine23-netizen/KEY_SHIFT_play/tree/main
-#add fileとか
-
-# GitHubに上げ終わったら、スマホで開くためのURLを作ります。
-# Streamlit Cloud にアクセスして、GitHubでログイン。
-# [Create app] を押します。
-# リポジトリ: https://github.com/yukipiledpine23-netizen/KEY_SHIFT_play
-# 支店: main
-# メインファイルパス: KEY_SHIFT&play_phone.py
-# アプリのURL（任意）my-voice-tuner.streamlit.appにした
-# 展開
-# 展開が出なくて苦労して、↓でいけた
-# https://share.streamlit.io/deploy?repository=yukipiledpine23-netizen/KEY_SHIFT_play&branch=main&main_module_res=KEY_SHIFT%26play_phone.py
-
-
-# [Android Chrome マイク許可設定まとめ] これはgithubにあげてやるやつじゃなくて、ネットワーク内でhttp://192.168.10.103:8501でアクセスするテスト用の方法。
-# ブラウザの制限解除（最重要）
-# アドレスバーに chrome://flags/#unsafely-treat-insecure-origin-as-secure を入力。
-# Insecure origins treated as secure の欄に http://192.168.10.103:8501 を入力。
-# 右側のメニューを Enabled に変更し、右下の Relaunch で再起動。
-# サイト個別の権限許可
-# アプリを開いた状態で、アドレスバー横の 錠前 🔒 または 設定 ⚙️ アイコン をタップ。
-# 権限（またはサイトの設定）から、マイク を 許可 にする。
-# OSアプリ権限の確認
-# Androidの 設定 > アプリ > Chrome > 権限 を開く。
-# マイク が 許可（アプリの使用中のみ）になっているか確認。
 
 
 import streamlit as st
@@ -272,4 +222,4 @@ if selected_file:
         if (baseData.length > 0) updateDisplay();
         </script>
         """
-        components.html(html_code, height=850, scrolling=True)
+        components.html(html_code, height=850, scrolling=True, allow="microphone")
