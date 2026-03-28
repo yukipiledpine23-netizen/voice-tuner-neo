@@ -3,6 +3,7 @@
 import streamlit as st
 import os
 import re
+import base64
 
 # --- 1. ブラウザ・ページ基本設定 ---
 st.set_page_config(page_title="VOICE TUNER NEO", layout="centered")
@@ -13,7 +14,6 @@ st.markdown("""
     .stApp { background-color: #0e0e10 !important; color: #e1e1e3 !important; }
     header {visibility: hidden;}
     .main .block-container { padding-top: 1rem; }
-    /* iframeの枠と余白を完全に除去 */
     iframe { border: none !important; width: 100% !important; height: 850px !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -50,11 +50,22 @@ if selected_file:
         notes_json = str(data).replace("'", '"')
         safe_raw_text = raw_text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${").replace("\n", "\\n")
 
-        # HTML本体。script部分にマイクチェックと初期化の強化を追加
+        # HTMLコンテンツ
         html_content = f"""
-        <div id="app-wrapper" style="background-color:#0e0e10; color:#e1e1e3; font-family:sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-sizing: border-box; position:relative;">
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+                body {{ background-color: #0e0e10; margin: 0; padding: 0; overflow: hidden; }}
+                #app-wrapper {{ background-color:#0e0e10; color:#e1e1e3; font-family:sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-sizing: border-box; position:relative; overflow:hidden; }}
+            </style>
+        </head>
+        <body>
+        <div id="app-wrapper">
             <div id="mic-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#0e0e10; z-index:9999; display:flex; justify-content:center; align-items:center;">
-                <button id="st-btn" style="background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer;">
+                <button id="st-btn" style="background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">
                     START MIC / ACTIVATE
                 </button>
             </div>
@@ -65,17 +76,17 @@ if selected_file:
                 <div style="display: flex; gap: 15px; margin-bottom: 25px;">
                     <div style="flex: 1;">
                         <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c;">
-                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px;">➖</button>
+                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; -webkit-tap-highlight-color: transparent;">➖</button>
                             <div id="key-val" style="flex:1; text-align:center; font-weight:bold; font-size:13px; color:#ffb74d;">KEY: 0</div>
-                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px;">➕</button>
+                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; -webkit-tap-highlight-color: transparent;">➕</button>
                         </div>
-                        <div onclick="playNext()" style="background:#161618; border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; position:relative;">
+                        <div onclick="playNext()" style="background:#161618; border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; position:relative; user-select:none; -webkit-tap-highlight-color: transparent;">
                             <p style="font-size:11px; color:#555; position:absolute; top:15px; width:100%;">TAP TO NEXT ▶</p>
                             <h1 id="display-note" style="font-size:90px; color:#fff; margin:0; font-weight:100; line-height:0.8;">--</h1>
                         </div>
                         <div style="display:flex; gap:10px;">
-                            <button onclick="resetApp()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px;">|< 最初へ</button>
-                            <button onclick="prevNote()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px;">◀ 戻る</button>
+                            <button onclick="resetApp()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px; -webkit-tap-highlight-color: transparent;">|< 最初へ</button>
+                            <button onclick="prevNote()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px; -webkit-tap-highlight-color: transparent;">◀ 戻る</button>
                         </div>
                     </div>
                     <div id="meter-container" style="width:35px; background:#1c1c1f; border-radius:14px; border:1px solid #3a3a3c; position:relative; overflow:hidden;">
@@ -90,7 +101,6 @@ if selected_file:
                 </div>
             </div>
         </div>
-
         <script>
         const baseData = {notes_json}, rawText = `{safe_raw_text}`, valToNote = ["ド", "ド#", "レ", "レ#", "ミ", "ファ", "ファ#", "ソ", "ソ#", "ラ", "ラ#", "シ"];
         let currentKey = 0, currentIndex = -1, nextDisplayIndex = 0, audioCtx = null, masterGain = null, analyzer = null, isMicActive = false;
@@ -105,20 +115,16 @@ if selected_file:
                 }}
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const stream = await nav.mediaDevices.getUserMedia({{ audio: true }});
-                
                 masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.5, audioCtx.currentTime); 
                 masterGain.connect(audioCtx.destination);
                 const source = audioCtx.createMediaStreamSource(stream);
                 analyzer = audioCtx.createAnalyser(); analyzer.fftSize = 1024;
                 source.connect(analyzer);
-                
                 isMicActive = true; 
                 document.getElementById('mic-overlay').style.display = 'none';
                 document.getElementById('main-ui').style.opacity = '1';
                 tick(); updateDisplay();
-            }} catch(e) {{ 
-                alert("ERR: " + e.name + " - " + e.message);
-            }}
+            }} catch(e) {{ alert("ERR: " + e.name + " - " + e.message); }}
         }});
 
         function tick() {{
@@ -161,8 +167,7 @@ if selected_file:
             const replaceFunc = (isAfter) => {{
                 let count = 0;
                 return rawText.split('\\n').map(line => line.replace(pattern, (match) => {{
-                    const idx = count++; 
-                    if (!baseData[idx]) return match;
+                    const idx = count++; if (!baseData[idx]) return match;
                     let txt = match;
                     if (isAfter) {{ const p = baseData[idx].abs_pos + currentKey; txt = valToNote[((p % 12) + 12) % 12] + Math.floor(p / 12); }}
                     let style = idx === currentIndex ? "color:#00d4ff; font-weight:bold;" : "";
@@ -191,14 +196,17 @@ if selected_file:
         function resetApp() {{ currentIndex = -1; nextDisplayIndex = 0; updateDisplay(); }}
         updateDisplay();
         </script>
+        </body>
+        </html>
         """
 
-        # --- 最重要：Streamlitを通さず、ブラウザに直接 allow="microphone" を伝える ---
-        # components.htmlではなく、srcdocを使用することでスマホの権限継承をより確実にします
-        escaped_html = html_content.replace('"', '&quot;')
+        # HTMLをBase64にエンコード
+        b64_html = base64.b64encode(html_content.encode("utf-8")).decode("utf-8")
+        
+        # 確実にマイクを許可するiframe属性を付与して出力
         st.write(
-            f'<iframe srcdoc="{escaped_html}" '
-            f'allow="microphone; camera;" '
+            f'<iframe src="data:text/html;base64,{b64_html}" '
+            f'allow="microphone; camera; autoplay;" '
             f'style="width:100%; height:850px; border:none;"></iframe>',
             unsafe_allow_html=True
         )
