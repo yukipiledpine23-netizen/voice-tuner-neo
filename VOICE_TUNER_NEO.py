@@ -5,7 +5,7 @@
 import streamlit as st
 import os
 import re
-import streamlit.components.v1 as components
+import base64
 
 # --- 1. ブラウザ・ページ基本設定 ---
 st.set_page_config(page_title="VOICE TUNER NEO", layout="centered")
