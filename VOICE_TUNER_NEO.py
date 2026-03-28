@@ -222,4 +222,11 @@ if selected_file:
         if (baseData.length > 0) updateDisplay();
         </script>
         """
-        components.html(html_code, height=850, scrolling=True)
+        # HTMLをBase64に変換して、allow="microphone"付きのiframeとして出力
+        b64_html = base64.b64encode(html_code.encode("utf-8")).decode("utf-8")
+        st.write(
+            f'<iframe src="data:text/html;base64,{b64_html}" '
+            f'height="820" style="width:100%; border:none; overflow:hidden;" '
+            f'allow="microphone"></iframe>',
+            unsafe_allow_html=True
+        )
