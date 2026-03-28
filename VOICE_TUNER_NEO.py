@@ -1,11 +1,10 @@
 # 20260326
 
 
-
 import streamlit as st
 import os
 import re
-import base64
+import streamlit.components.v1 as components
 
 # --- 1. ブラウザ・ページ基本設定 ---
 st.set_page_config(page_title="VOICE TUNER NEO", layout="centered")
@@ -14,14 +13,10 @@ st.set_page_config(page_title="VOICE TUNER NEO", layout="centered")
 st.markdown("""
     <style>
     .stApp { background-color: #0e0e10 !important; color: #e1e1e3 !important; }
-    div[data-baseweb="select"] { 
-        border: 1px solid #3a3a3c !important; 
-        background-color: #1c1c1f !important;
-        box-shadow: none !important;
-    }
-    div[data-baseweb="select"] > div { border: none !important; box-shadow: none !important; }
+    div[data-baseweb="select"] { border: 1px solid #3a3a3c !important; background-color: #1c1c1f !important; }
     header {visibility: hidden;}
     .main .block-container { padding-top: 2rem; }
+    /* iframeのボーダーを消す */
     iframe { border: none !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -58,94 +53,86 @@ if selected_file:
         notes_json = str(data).replace("'", '"')
         safe_raw_text = raw_text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${").replace("\n", "\\n")
 
+        # components.html を使用し、JS側で「親ウィンドウ」にマイクを要求する
+        # スマホSafari対策として、ユーザーアクション(Click)に強く紐付ける
         html_code = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <style>
-                body {{ background-color: #0e0e10; margin: 0; padding: 0; overflow-x: hidden; }}
-                #app-wrapper {{ background-color:#0e0e10; color:#e1e1e3; font-family:'Segoe UI', Roboto, sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); box-sizing: border-box; position:relative; overflow:hidden; }}
-            </style>
-        </head>
-        <body>
-        <div id="app-wrapper">
-            <div id="mic-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#0e0e10; z-index:9999; display:flex; flex-direction:column; align-items:center;">
-                <button id="start-btn" onclick="startApp()" style="position:absolute; top:280px; background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent;">
-                    START / ACTIVATE MIC
+        <div id="app-wrapper" style="background-color:#0e0e10; color:#e1e1e3; font-family:sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-sizing: border-box; position:relative;">
+            <div id="mic-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#0e0e10; z-index:9999; display:flex; justify-content:center; align-items:center;">
+                <button onclick="startApp()" style="background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer;">
+                    START MIC
                 </button>
             </div>
 
             <div id="main-ui" style="opacity: 0;">
-                <div style="text-align:center; padding:15px 0 20px 0; user-select: none;">
-                    <h2 style="letter-spacing:12px; font-weight:200; color:#00d4ff; margin:0; font-size:14px; opacity:0.8; display:inline-block; position:relative; padding-bottom:12px;">
-                        VOICE TUNER NEO
-                        <span style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:240px; height:1px; background:linear-gradient(90deg, transparent, #00d4ff, transparent); opacity:0.4;"></span>
-                    </h2>
+                <div style="text-align:center; padding:10px 0 20px 0;">
+                    <h2 style="letter-spacing:10px; color:#00d4ff; margin:0; font-size:14px;">VOICE TUNER NEO</h2>
                 </div>
 
-                <div style="display: flex; gap: 15px; margin-bottom: 28px;">
+                <div style="display: flex; gap: 15px; margin-bottom: 25px;">
                     <div style="flex: 1;">
-                        <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c; user-select: none;">
-                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; cursor:pointer; -webkit-tap-highlight-color: transparent;">➖</button>
-                            <div id="key-val" style="flex:1; text-align:center; font-weight:bold; font-size:13px; color:#ffb74d; letter-spacing:2px;">KEY: 0</div>
-                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; cursor:pointer; -webkit-tap-highlight-color: transparent;">➕</button>
+                        <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c;">
+                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px;">➖</button>
+                            <div id="key-val" style="flex:1; text-align:center; font-weight:bold; font-size:13px; color:#ffb74d;">KEY: 0</div>
+                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px;">➕</button>
                         </div>
-                        <div onclick="playNext()" style="background:linear-gradient(145deg, #161618, #1c1c1f); border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; cursor:pointer; position:relative; overflow:hidden; user-select: none; -webkit-tap-highlight-color: transparent;">
-                            <p style="font-size:13px; color:#555; letter-spacing:3px; position:absolute; top:18px; width:100%; text-align:center;">TAP TO NEXT ▶</p>
-                            <h1 id="display-note" style="font-size:95px; color:#fff; text-shadow: 0 0 25px rgba(0,212,255,0.4); margin:0; font-weight:100; line-height:0.8;">--</h1>
+                        <div onclick="playNext()" style="background:#161618; border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; position:relative;">
+                            <p style="font-size:11px; color:#555; position:absolute; top:15px; width:100%;">TAP TO NEXT ▶</p>
+                            <h1 id="display-note" style="font-size:90px; color:#fff; margin:0; font-weight:100; line-height:0.8;">--</h1>
                         </div>
-                        <div style="display:flex; gap:12px; user-select: none;">
-                            <button onclick="resetApp()" style="flex:1; height:52px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:13px; font-weight:600; cursor:pointer;">|< 最初へ</button>
-                            <button onclick="prevNote()" style="flex:1; height:52px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:13px; font-weight:600; cursor:pointer;">◀ 戻る</button>
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="resetApp()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px;">|< 最初へ</button>
+                            <button onclick="prevNote()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px;">◀ 戻る</button>
                         </div>
                     </div>
-                    <div id="meter-container" style="width:35px; background:#1c1c1f; border-radius:14px; border:1px solid #3a3a3c; position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center;">
-                        <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(0,212,255,0.4); z-index:1;"></div>
-                        <div id="target-note-mini" style="position:absolute; color:#444; font-size:10px; font-weight:bold; transform:translateY(12px); width:100%; text-align:center; top:50%;"></div>
-                        <div id="current-line" style="position:absolute; width:100%; height:3px; background:#00d4ff; box-shadow: 0 0 8px #00d4ff; top:50%; opacity:0; transition: top 0.05s ease-out; z-index:2;"></div>
+                    <div id="meter-container" style="width:35px; background:#1c1c1f; border-radius:14px; border:1px solid #3a3a3c; position:relative; overflow:hidden;">
+                        <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(0,212,255,0.4);"></div>
+                        <div id="target-note-mini" style="position:absolute; color:#444; font-size:9px; width:100%; text-align:center; top:50%; transform:translateY(12px);"></div>
+                        <div id="current-line" style="position:absolute; width:100%; height:3px; background:#00d4ff; top:50%; opacity:0;"></div>
                     </div>
                 </div>
 
-                <div style="background:#161618; border-radius:14px; padding:18px; border:1px solid #2d2d30;">
-                    <div style="margin-bottom:18px;">
-                        <span style="font-size:10px; color:#d1d1d6; letter-spacing:1px; font-weight:bold; opacity:0.8;">キー変更後</span>
-                        <div id="after-list" style="color:#d1d1d6; font-size:14px; white-space:pre-wrap; line-height:1.8; max-height:150px; overflow-y:auto; padding:10px; margin-top:8px; border:1px solid #2d2d30; border-radius:6px; background:#0e0e10;"></div>
-                    </div>
-                    <div>
-                        <span style="font-size:10px; color:#444; letter-spacing:1px; font-weight:bold; opacity:0.8;">キー変更前</span>
-                        <div id="before-list" style="color:#444; font-size:14px; white-space:pre-wrap; line-height:1.8; max-height:150px; overflow-y:auto; padding:10px; margin-top:8px; border:1px solid #2d2d30; border-radius:6px; background:#0e0e10;"></div>
-                    </div>
+                <div style="background:#161618; border-radius:14px; padding:15px; border:1px solid #2d2d30;">
+                    <div id="after-list" style="color:#d1d1d6; font-size:13px; white-space:pre-wrap; max-height:120px; overflow-y:auto; margin-bottom:10px;"></div>
+                    <div id="before-list" style="color:#444; font-size:13px; white-space:pre-wrap; max-height:120px; overflow-y:auto;"></div>
                 </div>
-                <div style="text-align:center; padding:20px 0 5px 0; font-size:9px; color:#3a3a3c; letter-spacing:3px;">DEVELOPED BY 鷺城流</div>
             </div>
         </div>
 
         <script>
         const baseData = {notes_json}, rawText = `{safe_raw_text}`, valToNote = ["ド", "ド#", "レ", "レ#", "ミ", "ファ", "ファ#", "ソ", "ソ#", "ラ", "ラ#", "シ"];
-        let currentKey = 0, currentIndex = -1, nextDisplayIndex = 0, audioCtx = null, masterGain = null, analyzer = null, activeNodes = [], isMicActive = false;
+        let currentKey = 0, currentIndex = -1, nextDisplayIndex = 0, audioCtx = null, masterGain = null, analyzer = null, isMicActive = false;
         let buf = new Float32Array(1024);
 
         async function startApp() {{
             try {{
-                // マイク権限チェックを明示的に
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {{
-                    alert("ブラウザがマイクに対応していないか、権限がブロックされています。SafariやChromeの最新版で開き直してください。");
-                    return;
-                }}
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)({{ latencyHint: 0 }});
+                // iOS Safari/スマホ対策: navigator.mediaDevices 自体がない場合のエラー回避
+                const mediaDevices = navigator.mediaDevices || ((navigator.mozGetUserMedia || navigator.webkitGetUserMedia) ? {{
+                    getUserMedia: function(c) {{
+                        return new Promise(function(y, n) {{
+                            (navigator.mozGetUserMedia || navigator.webkitGetUserMedia).call(navigator, c, y, n);
+                        }});
+                    }}
+                }} : null);
+
+                if (!mediaDevices) throw new Error("mediaDevices not found");
+
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const stream = await mediaDevices.getUserMedia({{ audio: true }});
+                
                 masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.5, audioCtx.currentTime); 
-                const comp = audioCtx.createDynamicsCompressor(); masterGain.connect(comp); comp.connect(audioCtx.destination); 
-                const stream = await navigator.mediaDevices.getUserMedia({{ audio: {{ echoCancellation: false, noiseSuppression: false, autoGainControl: false }} }});
+                masterGain.connect(audioCtx.destination);
+                
                 const source = audioCtx.createMediaStreamSource(stream);
                 analyzer = audioCtx.createAnalyser(); analyzer.fftSize = 1024;
                 source.connect(analyzer);
+                
                 isMicActive = true; 
                 document.getElementById('mic-overlay').style.display = 'none';
                 document.getElementById('main-ui').style.opacity = '1';
                 tick(); updateDisplay();
-            }} catch(e) {{ alert("マイクエラー: " + e.name + " - " + e.message); }}
+            }} catch(e) {{ 
+                alert("ERR: " + e.message + "\\nHTTPS環境とブラウザ設定を確認してください。");
+            }}
         }}
 
         function tick() {{
@@ -162,37 +149,37 @@ if selected_file:
                 pitch = audioCtx.sampleRate/maxpos;
             }}
             const line = document.getElementById('current-line');
-            if (pitch !== -1 && currentIndex >= 0 && baseData[currentIndex]) {{
+            if (pitch !== -1 && currentIndex >= 0) {{
                 const targetPos = baseData[currentIndex].abs_pos + currentKey;
                 const targetFreq = 440 * Math.pow(2, (targetPos - 57) / 12);
                 let cents = 1200 * Math.log2(pitch / targetFreq);
                 line.style.opacity = "1";
                 line.style.top = (50 - (Math.max(-200, Math.min(200, cents)) / 4)) + "%";
-            }} else if (line) {{ line.style.opacity = "0"; }}
+            }} else {{ line.style.opacity = "0"; }}
             requestAnimationFrame(tick);
         }}
 
         function updateDisplay() {{
             const disp = document.getElementById('display-note'), miniDisp = document.getElementById('target-note-mini');
-            if (!disp) return;
             if (nextDisplayIndex >= baseData.length) disp.innerText = "END";
             else {{
                 const pos = baseData[nextDisplayIndex].abs_pos + currentKey;
                 disp.innerText = valToNote[((pos % 12) + 12) % 12] + Math.floor(pos / 12);
             }}
-            if (miniDisp && currentIndex >= 0) {{
+            if (currentIndex >= 0) {{
                 const p = baseData[currentIndex].abs_pos + currentKey;
                 miniDisp.innerText = valToNote[((p % 12) + 12) % 12] + Math.floor(p / 12);
             }}
-            document.getElementById('key-val').innerText = "KEY: " + (currentKey > 0 ? "+" : "") + currentKey;
+            document.getElementById('key-val').innerText = "KEY: " + currentKey;
             const pattern = /([ァ-ヶぁ-ん]{{1,2}}|[a-z]{{1,2}})([#b♭＃＃]?)([0-9])([#b♭＃＃]?)/gi;
             const replaceFunc = (isAfter) => {{
                 let count = 0;
                 return rawText.split('\\n').map(line => line.replace(pattern, (match) => {{
-                    const idx = count++; if (!baseData[idx]) return match;
+                    const idx = count++; 
+                    if (!baseData[idx]) return match;
                     let txt = match;
                     if (isAfter) {{ const p = baseData[idx].abs_pos + currentKey; txt = valToNote[((p % 12) + 12) % 12] + Math.floor(p / 12); }}
-                    let style = idx === currentIndex ? "color:#00d4ff; font-weight:bold; border-bottom:1px solid #00d4ff;" : "";
+                    let style = idx === currentIndex ? "color:#00d4ff; font-weight:bold;" : "";
                     return `<span style="${{style}}">${{txt}}</span>`;
                 }})).join('\\n');
             }};
@@ -205,33 +192,24 @@ if selected_file:
             if (currentIndex < baseData.length - 1) {{ currentIndex++; nextDisplayIndex = currentIndex + 1; }}
             else {{ currentIndex = 0; nextDisplayIndex = 1; }}
             updateDisplay();
-            activeNodes.forEach(n => {{ try {{ n.g.gain.cancelScheduledValues(audioCtx.currentTime); n.g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05); }} catch(e) {{}} }}); 
+            activeNodes.forEach(n => {{ try {{ n.stop(); }} catch(e) {{}} }}); 
             activeNodes = [];
             const pos = baseData[currentIndex].abs_pos + currentKey, freq = 440 * Math.pow(2, (pos - 57) / 12);
-            const createTone = (f, vol, decay) => {{
-                const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(f, audioCtx.currentTime);
-                g.gain.setValueAtTime(0.001, audioCtx.currentTime); g.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.005);
-                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
-                osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + decay + 0.1); return {{osc, g}};
-            }};
-            activeNodes.push(createTone(freq, 1.0, 1.8), createTone(freq * 2, 0.4, 1.2), createTone(freq * 3, 0.2, 0.8));
+            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            g.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0);
+            osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + 1.1);
+            activeNodes.push(osc);
         }}
 
         function changeKey(diff) {{ currentKey += diff; updateDisplay(); }}
         function prevNote() {{ if (currentIndex > 0) {{ currentIndex--; nextDisplayIndex = currentIndex + 1; updateDisplay(); }} }}
         function resetApp() {{ currentIndex = -1; nextDisplayIndex = 0; updateDisplay(); }}
-        if (baseData.length > 0) updateDisplay();
+        updateDisplay();
         </script>
-        </body>
-        </html>
         """
         
-        b64_html = base64.b64encode(html_code.encode("utf-8")).decode("utf-8")
-        # --- ここで allow 属性を強力に設定 ---
-        st.write(
-            f'<iframe src="data:text/html;base64,{b64_html}" '
-            f'height="820" style="width:100%; border:none;" '
-            f'allow="camera; microphone; autoplay; encrypted-media;"></iframe>',
-            unsafe_allow_html=True
-        )
+        # Streamlitの正規のコンポーネントを使いつつ、iframeに権限を付与する
+        # この方式がStreamlit Cloudで最も安定します
+        components.html(html_code, height=820, scrolling=False)
