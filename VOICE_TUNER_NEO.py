@@ -1,10 +1,8 @@
 # 20260326
 
-
 import streamlit as st
 import os
 import re
-import streamlit.components.v1 as components
 
 # --- 1. ブラウザ・ページ基本設定 ---
 st.set_page_config(page_title="VOICE TUNER NEO", layout="centered")
@@ -13,11 +11,10 @@ st.set_page_config(page_title="VOICE TUNER NEO", layout="centered")
 st.markdown("""
     <style>
     .stApp { background-color: #0e0e10 !important; color: #e1e1e3 !important; }
-    div[data-baseweb="select"] { border: 1px solid #3a3a3c !important; background-color: #1c1c1f !important; }
     header {visibility: hidden;}
-    .main .block-container { padding-top: 2rem; }
-    /* iframeのボーダーを消す */
-    iframe { border: none !important; }
+    .main .block-container { padding-top: 1rem; }
+    /* iframeの枠と余白を完全に除去 */
+    iframe { border: none !important; width: 100% !important; height: 850px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -53,21 +50,18 @@ if selected_file:
         notes_json = str(data).replace("'", '"')
         safe_raw_text = raw_text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${").replace("\n", "\\n")
 
-        # components.html を使用し、JS側で「親ウィンドウ」にマイクを要求する
-        # スマホSafari対策として、ユーザーアクション(Click)に強く紐付ける
-        html_code = f"""
+        # HTML本体。script部分にマイクチェックと初期化の強化を追加
+        html_content = f"""
         <div id="app-wrapper" style="background-color:#0e0e10; color:#e1e1e3; font-family:sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-sizing: border-box; position:relative;">
             <div id="mic-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#0e0e10; z-index:9999; display:flex; justify-content:center; align-items:center;">
-                <button onclick="startApp()" style="background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer;">
-                    START MIC
+                <button id="st-btn" style="background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer;">
+                    START MIC / ACTIVATE
                 </button>
             </div>
-
             <div id="main-ui" style="opacity: 0;">
                 <div style="text-align:center; padding:10px 0 20px 0;">
                     <h2 style="letter-spacing:10px; color:#00d4ff; margin:0; font-size:14px;">VOICE TUNER NEO</h2>
                 </div>
-
                 <div style="display: flex; gap: 15px; margin-bottom: 25px;">
                     <div style="flex: 1;">
                         <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c;">
@@ -90,7 +84,6 @@ if selected_file:
                         <div id="current-line" style="position:absolute; width:100%; height:3px; background:#00d4ff; top:50%; opacity:0;"></div>
                     </div>
                 </div>
-
                 <div style="background:#161618; border-radius:14px; padding:15px; border:1px solid #2d2d30;">
                     <div id="after-list" style="color:#d1d1d6; font-size:13px; white-space:pre-wrap; max-height:120px; overflow-y:auto; margin-bottom:10px;"></div>
                     <div id="before-list" style="color:#444; font-size:13px; white-space:pre-wrap; max-height:120px; overflow-y:auto;"></div>
@@ -103,25 +96,18 @@ if selected_file:
         let currentKey = 0, currentIndex = -1, nextDisplayIndex = 0, audioCtx = null, masterGain = null, analyzer = null, isMicActive = false;
         let buf = new Float32Array(1024);
 
-        async function startApp() {{
+        document.getElementById('st-btn').addEventListener('click', async () => {{
             try {{
-                // iOS Safari/スマホ対策: navigator.mediaDevices 自体がない場合のエラー回避
-                const mediaDevices = navigator.mediaDevices || ((navigator.mozGetUserMedia || navigator.webkitGetUserMedia) ? {{
-                    getUserMedia: function(c) {{
-                        return new Promise(function(y, n) {{
-                            (navigator.mozGetUserMedia || navigator.webkitGetUserMedia).call(navigator, c, y, n);
-                        }});
-                    }}
-                }} : null);
-
-                if (!mediaDevices) throw new Error("mediaDevices not found");
-
+                const nav = window.navigator;
+                if (!nav.mediaDevices || !nav.mediaDevices.getUserMedia) {{
+                    alert("マイク未対応ブラウザです。Safari/Chromeをお使いください。");
+                    return;
+                }}
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const stream = await mediaDevices.getUserMedia({{ audio: true }});
+                const stream = await nav.mediaDevices.getUserMedia({{ audio: true }});
                 
                 masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.5, audioCtx.currentTime); 
                 masterGain.connect(audioCtx.destination);
-                
                 const source = audioCtx.createMediaStreamSource(stream);
                 analyzer = audioCtx.createAnalyser(); analyzer.fftSize = 1024;
                 source.connect(analyzer);
@@ -131,9 +117,9 @@ if selected_file:
                 document.getElementById('main-ui').style.opacity = '1';
                 tick(); updateDisplay();
             }} catch(e) {{ 
-                alert("ERR: " + e.message + "\\nHTTPS環境とブラウザ設定を確認してください。");
+                alert("ERR: " + e.name + " - " + e.message);
             }}
-        }}
+        }});
 
         function tick() {{
             if (!isMicActive) return;
@@ -192,15 +178,12 @@ if selected_file:
             if (currentIndex < baseData.length - 1) {{ currentIndex++; nextDisplayIndex = currentIndex + 1; }}
             else {{ currentIndex = 0; nextDisplayIndex = 1; }}
             updateDisplay();
-            activeNodes.forEach(n => {{ try {{ n.stop(); }} catch(e) {{}} }}); 
-            activeNodes = [];
             const pos = baseData[currentIndex].abs_pos + currentKey, freq = 440 * Math.pow(2, (pos - 57) / 12);
             const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             g.gain.setValueAtTime(0.5, audioCtx.currentTime);
             g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0);
             osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + 1.1);
-            activeNodes.push(osc);
         }}
 
         function changeKey(diff) {{ currentKey += diff; updateDisplay(); }}
@@ -209,7 +192,13 @@ if selected_file:
         updateDisplay();
         </script>
         """
-        
-        # Streamlitの正規のコンポーネントを使いつつ、iframeに権限を付与する
-        # この方式がStreamlit Cloudで最も安定します
-        components.html(html_code, height=820, scrolling=False)
+
+        # --- 最重要：Streamlitを通さず、ブラウザに直接 allow="microphone" を伝える ---
+        # components.htmlではなく、srcdocを使用することでスマホの権限継承をより確実にします
+        escaped_html = html_content.replace('"', '&quot;')
+        st.write(
+            f'<iframe srcdoc="{escaped_html}" '
+            f'allow="microphone; camera;" '
+            f'style="width:100%; height:850px; border:none;"></iframe>',
+            unsafe_allow_html=True
+        )
