@@ -13,8 +13,9 @@ st.markdown("""
     <style>
     .stApp { background-color: #0e0e10 !important; color: #e1e1e3 !important; }
     header {visibility: hidden;}
-    .main .block-container { padding-top: 1rem; }
-    iframe { border: none !important; width: 100% !important; }
+    .main .block-container { padding-top: 1rem; padding-left: 0.5rem; padding-right: 0.5rem; }
+    div[data-testid="stVerticalBlock"] > div:has(iframe) { padding: 0; }
+    iframe { border: none !important; width: 100% !important; border-radius: 24px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -51,42 +52,50 @@ if selected_file:
         safe_raw_text = raw_text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${").replace("\n", "\\n")
 
         html_code = f"""
-        <div id="app-wrapper" style="background-color:#0e0e10; color:#e1e1e3; font-family:sans-serif; max-width:500px; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-sizing: border-box; position:relative;">
-            <div id="mic-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#0e0e10; z-index:9999; display:flex; justify-content:center; align-items:center;">
-                <button id="st-btn" style="background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer; -webkit-tap-highlight-color: transparent;">
-                    START MIC / ACTIVATE
+        <div id="app-wrapper" style="background-color:#0e0e10; color:#e1e1e3; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width:100%; margin:auto; padding:15px; border:1px solid #2d2d30; border-radius:24px; box-sizing: border-box; position:relative; overflow:hidden;">
+            <div id="mic-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#0e0e10; z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                <p style="color:#00d4ff; font-size:12px; letter-spacing:4px; margin-bottom:20px; opacity:0.8;">DEVICE READY</p>
+                <button id="st-btn" style="background:transparent; border:1px solid #00d4ff; color:#00d4ff; padding:20px 40px; border-radius:50px; font-size:14px; letter-spacing:4px; cursor:pointer; outline:none; -webkit-tap-highlight-color: transparent; box-shadow: 0 0 15px rgba(0,212,255,0.2);">
+                    START MIC
                 </button>
             </div>
-            <div id="main-ui" style="opacity: 0;">
-                <div style="text-align:center; padding:10px 0 20px 0; user-select:none;">
-                    <h2 style="letter-spacing:10px; color:#00d4ff; margin:0; font-size:14px;">VOICE TUNER NEO</h2>
+
+            <div id="main-ui" style="opacity: 0; transition: opacity 0.5s ease;">
+                <div style="text-align:center; padding:10px 0 20px 0;">
+                    <h2 style="letter-spacing:10px; color:#00d4ff; margin:0; font-size:14px; font-weight:200;">VOICE TUNER NEO</h2>
                 </div>
-                <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+
+                <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: stretch;">
                     <div style="flex: 1;">
-                        <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c; user-select:none;">
-                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px;">➖</button>
-                            <div id="key-val" style="flex:1; text-align:center; font-weight:bold; font-size:13px; color:#ffb74d;">KEY: 0</div>
-                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px;">➕</button>
+                        <div style="display:flex; align-items:center; background:#1c1c1f; border-radius:14px; padding:6px; margin-bottom:18px; border:1px solid #3a3a3c;">
+                            <button onclick="changeKey(-1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; cursor:pointer; -webkit-tap-highlight-color: transparent;">➖</button>
+                            <div id="key-val" style="flex:1; text-align:center; font-weight:bold; font-size:13px; color:#ffb74d; letter-spacing:1px;">KEY: 0</div>
+                            <button onclick="changeKey(1)" style="width:55px; height:55px; border:none; background:transparent; color:#00d4ff; font-size:24px; cursor:pointer; -webkit-tap-highlight-color: transparent;">➕</button>
                         </div>
-                        <div id="tap-area" style="background:#161618; border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; position:relative; user-select:none; cursor:pointer; -webkit-tap-highlight-color: transparent;">
-                            <p style="font-size:11px; color:#555; position:absolute; top:15px; width:100%;">TAP TO NEXT ▶</p>
-                            <h1 id="display-note" style="font-size:90px; color:#fff; margin:0; font-weight:100; line-height:0.8;">--</h1>
+                        
+                        <div id="tap-area" style="background:linear-gradient(145deg, #161618, #1c1c1f); border:1px solid #3a3a3c; border-radius:18px; padding:65px 0 55px 0; text-align:center; margin-bottom:18px; position:relative; cursor:pointer; -webkit-tap-highlight-color: transparent;">
+                            <p style="font-size:11px; color:#555; position:absolute; top:15px; width:100%; letter-spacing:2px;">TAP TO NEXT ▶</p>
+                            <h1 id="display-note" style="font-size:90px; color:#fff; margin:0; font-weight:100; line-height:0.8; text-shadow: 0 0 20px rgba(0,212,255,0.3);">--</h1>
                         </div>
-                        <div style="display:flex; gap:10px; user-select:none;">
-                            <button onclick="resetApp()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px;">|< 最初へ</button>
-                            <button onclick="prevNote()" style="flex:1; height:50px; border-radius:10px; border:1px solid #3a3a3c; background:#1c1c1f; color:#bbb; font-size:12px;">◀ 戻る</button>
+
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="resetApp()" style="flex:1; height:50px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:12px; font-weight:600; cursor:pointer;">|< 最初</button>
+                            <button onclick="prevNote()" style="flex:1; height:50px; border-radius:12px; border:1px solid #3a3a3c; background:linear-gradient(180deg, #2a2a2e, #1c1c1f); color:#bbb; font-size:12px; font-weight:600; cursor:pointer;">◀ 戻る</button>
                         </div>
                     </div>
+
                     <div id="meter-container" style="width:35px; background:#1c1c1f; border-radius:14px; border:1px solid #3a3a3c; position:relative; overflow:hidden;">
-                        <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(0,212,255,0.4);"></div>
-                        <div id="target-note-mini" style="position:absolute; color:#444; font-size:9px; width:100%; text-align:center; top:50%; transform:translateY(12px);"></div>
-                        <div id="current-line" style="position:absolute; width:100%; height:3px; background:#00d4ff; top:50%; opacity:0; transition: top 0.05s ease-out;"></div>
+                        <div style="position:absolute; top:50%; width:100%; height:1px; background:rgba(0,212,255,0.4); z-index:1;"></div>
+                        <div id="target-note-mini" style="position:absolute; color:#444; font-size:10px; font-weight:bold; width:100%; text-align:center; top:50%; transform:translateY(12px);"></div>
+                        <div id="current-line" style="position:absolute; width:100%; height:3px; background:#00d4ff; box-shadow: 0 0 8px #00d4ff; top:50%; opacity:0; transition: top 0.05s ease-out; z-index:2;"></div>
                     </div>
                 </div>
+
                 <div style="background:#161618; border-radius:14px; padding:15px; border:1px solid #2d2d30;">
-                    <div id="after-list" style="color:#d1d1d6; font-size:13px; white-space:pre-wrap; max-height:120px; overflow-y:auto; margin-bottom:10px;"></div>
-                    <div id="before-list" style="color:#444; font-size:13px; white-space:pre-wrap; max-height:120px; overflow-y:auto;"></div>
+                    <div id="after-list" style="color:#d1d1d6; font-size:14px; white-space:pre-wrap; line-height:1.8; max-height:130px; overflow-y:auto; margin-bottom:12px; border-bottom:1px solid #2d2d30; padding-bottom:12px;"></div>
+                    <div id="before-list" style="color:#444; font-size:13px; white-space:pre-wrap; line-height:1.8; max-height:100px; overflow-y:auto;"></div>
                 </div>
+                <div style="text-align:center; padding-top:15px; font-size:9px; color:#3a3a3c; letter-spacing:2px;">SASHIRO-RYU TUNER SYSTEM</div>
             </div>
         </div>
 
@@ -94,8 +103,8 @@ if selected_file:
         const baseData = {notes_json}, rawText = `{safe_raw_text}`, valToNote = ["ド", "ド#", "レ", "レ#", "ミ", "ファ", "ファ#", "ソ", "ソ#", "ラ", "ラ#", "シ"];
         let currentKey = 0, currentIndex = -1, nextDisplayIndex = 0, audioCtx = null, masterGain = null, analyzer = null, isMicActive = false;
         let buf = new Float32Array(1024);
+        let activeNodes = [];
 
-        // イベントリスナーでマイクを起動
         document.getElementById('st-btn').addEventListener('click', async () => {{
             try {{
                 const nav = window.navigator;
@@ -103,10 +112,10 @@ if selected_file:
                     getUserMedia: (c) => new Promise((y, n) => (nav.mozGetUserMedia || nav.webkitGetUserMedia).call(nav, c, y, n))
                 }} : null);
 
-                if (!mediaDevices) throw new Error("ブラウザがマイクアクセスを制限しています。Safari/Chromeで直接開いてください。");
+                if (!mediaDevices) throw new Error("Audio support missing");
 
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const stream = await mediaDevices.getUserMedia({{ audio: true }});
+                const stream = await mediaDevices.getUserMedia({{ audio: {{ echoCancellation: false, noiseSuppression: false }} }});
                 
                 masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.5, audioCtx.currentTime); 
                 masterGain.connect(audioCtx.destination);
@@ -118,7 +127,7 @@ if selected_file:
                 document.getElementById('mic-overlay').style.display = 'none';
                 document.getElementById('main-ui').style.opacity = '1';
                 tick(); updateDisplay();
-            }} catch(e) {{ alert("ERR: " + e.message); }}
+            }} catch(e) {{ alert("MIC ERROR: Check browser settings."); }}
         }});
 
         document.getElementById('tap-area').addEventListener('click', () => {{ playNext(); }});
@@ -158,7 +167,7 @@ if selected_file:
                 const p = baseData[currentIndex].abs_pos + currentKey;
                 miniDisp.innerText = valToNote[((p % 12) + 12) % 12] + Math.floor(p / 12);
             }}
-            document.getElementById('key-val').innerText = "KEY: " + currentKey;
+            document.getElementById('key-val').innerText = "KEY: " + (currentKey > 0 ? "+" : "") + currentKey;
             const pattern = /([ァ-ヶぁ-ん]{{1,2}}|[a-z]{{1,2}})([#b♭＃＃]?)([0-9])([#b♭＃＃]?)/gi;
             const replaceFunc = (isAfter) => {{
                 let count = 0;
@@ -166,7 +175,7 @@ if selected_file:
                     const idx = count++; if (!baseData[idx]) return match;
                     let txt = match;
                     if (isAfter) {{ const p = baseData[idx].abs_pos + currentKey; txt = valToNote[((p % 12) + 12) % 12] + Math.floor(p / 12); }}
-                    let style = idx === currentIndex ? "color:#00d4ff; font-weight:bold;" : "";
+                    let style = idx === currentIndex ? "color:#00d4ff; font-weight:bold; border-bottom:1px solid #00d4ff;" : "";
                     return `<span style="${{style}}">${{txt}}</span>`;
                 }})).join('\\n');
             }};
@@ -179,12 +188,14 @@ if selected_file:
             if (currentIndex < baseData.length - 1) {{ currentIndex++; nextDisplayIndex = currentIndex + 1; }}
             else {{ currentIndex = 0; nextDisplayIndex = 1; }}
             updateDisplay();
+            activeNodes.forEach(n => {{ try {{ n.stop(); }} catch(e) {{}} }}); activeNodes = [];
             const pos = baseData[currentIndex].abs_pos + currentKey, freq = 440 * Math.pow(2, (pos - 57) / 12);
             const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            g.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0);
-            osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + 1.1);
+            g.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+            osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + 1.3);
+            activeNodes.push(osc);
         }}
 
         function changeKey(diff) {{ currentKey += diff; updateDisplay(); }}
@@ -194,5 +205,5 @@ if selected_file:
         </script>
         """
 
-        # 結局、公式コンポーネントで "microphone" を明示するのが、Streamlit Cloudのドメインでは最強です。
-        components.html(html_code, height=850, scrolling=False)
+        # 高さを少し余裕を持って確保し、スクロールを無効化
+        components.html(html_code, height=860, scrolling=False)
