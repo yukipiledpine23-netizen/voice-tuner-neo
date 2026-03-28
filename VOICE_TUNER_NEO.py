@@ -143,7 +143,7 @@ if selected_file:
                 document.getElementById('mic-overlay').style.display = 'none';
                 document.getElementById('main-ui').style.opacity = '1';
                 tick(); updateDisplay();
-            }} catch(e) {{ alert("マイクを許可してください"); }}
+            }} catch(e) {{ alert("マイクエラー詳細: " + e.name + " - " + e.message); }}
         }}
 
         function tick() {{
